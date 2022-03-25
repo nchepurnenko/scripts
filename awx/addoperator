@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# запускает job в awx, передает в него ip
+# job правит файл ipset, и разливает по машинам
+awx_user=
+awx_password=
+awx_host=
+ip=$1
+
+function start_awx_job {
+    curl -k -s --user $awx_user:$awx_password \
+    -X POST -H "Content-Type: application/json" "http://$awx_host/api/v2/workflow_job_templates/12/launch/" \
+    --data '{"extra_vars": {"ip_addr":"'$1'"}}'
+}
+
+function show_usage {
+    cat<<EOF
+    ERROR: ip is not set or is set incorrectly 
+
+    Usage examples:
+    addoperator 78.78.78.78
+    addoperator 87.87.87.0/24
+EOF
+    exit 1
+}
+
+if [[ $ip ]];then
+    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        echo "Job status: $(start_awx_job $ip | jq .status)"   
+    else
+        show_usage
+    fi
+else
+    show_usage
+fi
