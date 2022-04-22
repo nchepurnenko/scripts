@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# запускает job в awx, передает в него ip
-# job правит файл ipset, и разливает по машинам
 awx_user=
 awx_password=
 awx_host=
@@ -15,9 +13,9 @@ function start_awx_job {
 
 function show_usage {
     cat<<EOF
-    ERROR: ip is not set or is set incorrectly 
+    Ошибка: указан некорректный IP-адрес 
 
-    Usage examples:
+    Примеры использования:
     addoperator 78.78.78.78
     addoperator 87.87.87.0/24
 EOF
@@ -25,11 +23,20 @@ EOF
 }
 
 if [[ $ip ]];then
-    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-        echo "Job status: $(start_awx_job $ip | jq .status)"   
+    if [[ $ip =~ ^((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])(\/([1-2]?[0-9]|3[0-2]))?$ ]]; then
+        job_url=$(start_awx_job $ip | jq .url | tr -d '"')
+        job_status=""
+        echo "Статус выполнения:"
+        while [[ $job_status != *"successful"* ]];
+        do
+        job_status=$(curl -k -s --user $awx_user:$awx_password -X GET -H "Content-Type: application/json" "http://$awx_host$job_url" | jq .status)
+        echo $(date +%H:%M:%S) $job_status
+        sleep 3
+        done;   
     else
         show_usage
     fi
 else
     show_usage
 fi
+
