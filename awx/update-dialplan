@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+awx_user=
+awx_password=
+awx_host=
+file=$1
+job_num="18"
+
+function start_awx_job {
+    curl -k -s --user $awx_user:$awx_password \
+    -X POST -H "Content-Type: application/json" "http://$awx_host/api/v2/workflow_job_templates/$job_num/launch/" \
+    --data '{"extra_vars": {"idealsip": {"dialplan": "'$file'"}}, "limit": "'$limit'"}'
+}
+
+function show_usage {
+    cat<<EOF
+    Usage examples:
+    Применить диалплан:
+    dialplan-update extensions_dp.conf
+    Восстановить предыдущую версию:
+    dialplan-update backup/extensions_m9.conf.10-21-2020_17-53-44
+EOF
+    exit 1
+}
+
+if [ $# -eq 0 ]
+  then
+    show_usage
+fi
+if [[ -f $file ]]; then
+    if [[ $file == *"dp"* ]]; then
+        # limit="dp_idealsip_main_oper"
+        limit="dp_idealsip_main_oper"
+        site="dp"
+    elif [[ $file == *"m9"* ]]; then
+        limit="m9_idealsip_main_oper"
+        site="m9"
+    else
+        echo "Имя файла должно содержать имя площадки!"
+        show_usage    
+    fi
+    read -p "Запустить обновление диалплана из файла $(realpath $file) на идеалсипах в $site? Y/n" -n 1 -r
+    echo  
+    if [[ ! $REPLY =~ ^[Yy]$ ]]
+    then
+        exit 1
+    else
+        # запуск awx для деплоя конфигов
+        job_url=$(start_awx_job | jq .url | tr -d '"')
+        job_status=""
+        echo "Статус выполнения:"
+        while [[ $job_status != *"successful"* ]];
+        do
+        job_status=$(curl -k -s --user $awx_user:$awx_password -X GET -H "Content-Type: application/json" "http://$awx_host$job_url" | jq .status)
+        echo $(date +%H:%M:%S) $job_status
+        sleep 3
+        done;   
+    fi
+else
+    echo "Нет такого файла"
+fi    
