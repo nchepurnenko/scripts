@@ -7,21 +7,21 @@ from bson import json_util
 import tarfile
 import json
 
-SCRM = ""
-SCRM6 = ""
+SCRM = "server"
+SCRM6 = "server".
 MONGO_LOCAL_SERVER = "127.0.0.1"
-DB_RESTORE_DIR = ""
-DB_NAME = ""
-DB_COLLECTION = ""
-MONGO_USER=""
-MONGO_PASSWORD=""
-MONGO_AUTH_SOURCE=""
+DB_RESTORE_DIR = "/opt/backup/restore"
+DB_NAME = "scrm"
+DB_COLLECTION = "registrations"
+MONGO_USER="admin"
+MONGO_PASSWORD="pass"
+MONGO_AUTH_SOURCE="admin"
 usage = """Использование:
             restorescrm идентификатор_клиента дата_архива сервер [действие]
             формат даты: ГГГГММДД
             доступные серверы: scrm
             доступные действия:
-                - dump - сохранить данные по клиенту из архива в файл
+                - dump - сохранить данные по клиенту из архива в файл.
                 - revert - откатить изменения"""
 
 if len(sys.argv) == 4:
@@ -36,17 +36,17 @@ elif len(sys.argv) == 5:
     action = sys.argv[4]
 else:
     print(usage)
-    sys.exit(1)
+    sys.exit(1)...
 
 def mongo_connect(server,db,collection):
-
+.....
     # На этих серверах не включена авторизация
     if server == MONGO_LOCAL_SERVER or server == SCRM6:
        conn = MongoClient(server)
     else:
         conn = MongoClient(server,
                         username=MONGO_USER,
-                        password=MONGO_PASSWORD,
+						password=MONGO_PASSWORD,
                         authSource=MONGO_AUTH_SOURCE)
     database = conn[db]
     db_collection = database[collection]
@@ -70,7 +70,7 @@ def update_document(collection, data, client_id):
 
 def extract_arc(path):
 
-    tar = tarfile.open(path, "r:bz2")
+    tar = tarfile.open(path, "r:bz2")..
     tar.extractall(DB_RESTORE_DIR)
     tar.close()
 
@@ -93,20 +93,20 @@ else:
 # директория с бэкапами
 db_backup_dir = f"/opt/backup/db-{server}"
 
-# revert
+# revert.
 if (action == "revert"):
     revert_file = f"restorescrm_dumps/{client_id}_bk.json"
     if os.path.isfile(revert_file):
         question = input(f"Восстановить данные интеграции клиента {client_id} из файла {revert_file}? y/n\n")
         if question == "y":
             print(f"Восстановление данных клиента {client_id} из файла...")
-            os.system(f"mongoimport --host={mongo_prod_server} -u {MONGO_USER} -p {MONGO_PASSWORD} --authenticationDatabase {MONGO_AUTH_SOURCE}  -d scrm -c registrations --upsert --type json --file {revert_file}")
+            os.system(f"mongoimport --host={mongo_prod_server} -u {MONGO_USER} -p {MONGO_PASSWORD} --authenticationDatabase {MONGO_AUTH_SOURCE}
             sys.exit(0)
         elif question == "n":
             sys.exit(0)
     else:
         print(f"Не существует файла резервной копии данных интеграции клиента {client_id}")
- # end revert
+ # end revert...
 
 print("Восстановление БД из архива...")
 backup_arc_path = f"{db_backup_dir}/{backup_date}.tar.bz2"
@@ -142,7 +142,7 @@ if question == "y":
     prod_conn, prod_collection = mongo_connect(mongo_prod_server, DB_NAME, DB_COLLECTION)
     current_data = find_document(prod_collection, {"pbx_user_id" : client_id})
     if not current_data:
-        print("ОШИБКА. Не удалось получить данные.")
+	    print("ОШИБКА. Не удалось получить данные.")
         delete_temp_files(local_conn)
         sys.exit(1)
     # выгрузить в файл на случай отката
